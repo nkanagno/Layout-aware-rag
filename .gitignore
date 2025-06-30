@@ -1,0 +1,6 @@
+.env
+myenv/
+__pycache__
+text_data
+uploaded.pdf
+assets
