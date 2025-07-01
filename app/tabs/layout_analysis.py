@@ -1,13 +1,11 @@
 
 from app.helpers.layout_analysis import *
-
+import time
 from app.helpers.embeddings import *
 
-client = chromadb.PersistentClient(path="./data/chroma_persistent_storage")
-client.get_or_create_collection(name="init_collection")
-client = OpenAI(api_key=openai_key)
-
 DATABASE = 'application.db'
+
+
 
 def reset_table_layout_analyis():
     with sqlite3.connect(DATABASE) as conn:
@@ -28,45 +26,36 @@ def reset_table_layout_analyis():
 
 predictors = load_predictors_cached()
 
-def layout_analysis(page_count,pdf_file):
-    layout_analysis = False
+def layout_analysis(page_count, pdf_file):
+    empty_directory('./data/', skip_dirs=["chroma_persistent_storage"])
     save_path = os.path.join("data", "uploaded.pdf")
     os.makedirs("data", exist_ok=True)
-    with open(save_path, "wb") as f:
-        f.write(pdf_file.getbuffer())
-    reset_table_layout_analyis()
+
+    with st.spinner("Saving PDF and resetting layout analysis table..."):
+        with open(save_path, "wb") as f:
+            f.write(pdf_file.getbuffer())
+        reset_table_layout_analyis()
+    
     for i in range(page_count):
-        pil_image_highres = get_page_image(pdf_file, i+1, dpi=settings.IMAGE_DPI_HIGHRES)
-        layout_img, layout_pred = layout_detection(pil_image_highres, i+1)
-        st.image(layout_img, caption="Detected Layout page_"+str(i+1))
-    layout_analysis = True
-    return layout_analysis
+        with st.spinner(f"Layout analysis on page {i+1} out of {page_count}..."):
+            pil_image_highres = get_page_image(pdf_file, i + 1, dpi=settings.IMAGE_DPI_HIGHRES)
+            _, _ = layout_detection(pil_image_highres, i + 1)
+    with st.spinner("Generating embeddings..."):
+        chunked_documents = generate_embeddings()
+        
+    with st.spinner("Inserting embeddings to vector db..."):
+        insert_embeddings_into_vector_db(chunked_documents)  
 
 def layout_analysis_interface(pdf_file):
-    st.title("Layout analysis")
-    page_count = None
     page_count = page_counter(pdf_file)
-    pil_image = get_page_image(pdf_file, 1, settings.IMAGE_DPI)
-    pil_image_highres = get_page_image(pdf_file, 1, dpi=settings.IMAGE_DPI_HIGHRES)
-    if pil_image is None:
-        st.stop()
     pages = []
-    page_icons = []
     for i in range(page_count):
         pages.append(("page_"+str(i+1)))
-        page_icons.append((""))
+    if st.button("Analyze PDF", key="analyze_pdf_button"):
+        layout_analysis(page_count, pdf_file)
+        placeholder = st.empty()
+        placeholder.success("Layout analysis complete.")
+        time.sleep(2)
+        placeholder.empty()
+        return True
         
-    run_layout_det = st.button("Run Layout Analysis",key="layout_analysis")
-    col1, col2 = st.columns([.5, .5])
-    with col1:
-        for i in range(page_count):
-            pil_image_highres = get_page_image(pdf_file, i+1, dpi=settings.IMAGE_DPI_HIGHRES)
-            st.image(pil_image_highres, caption="Uploaded Image")
-    with col2:
-        layout_analysis_flag = False
-        if run_layout_det:  
-            empty_directory('./data/', skip_dirs=["chroma_persistent_storage"])
-            layout_analysis_flag = layout_analysis(page_count,pdf_file)
-            st.write(layout_analysis_flag)
-            with st.expander("creating embeddings"):
-                create_embeddings()

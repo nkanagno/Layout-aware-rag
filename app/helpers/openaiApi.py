@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-app = FastAPI()
+
 
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -13,7 +13,7 @@ import pandas as pd
 from fastapi import FastAPI
 
 print("hello")
-app = FastAPI()
+
 
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
@@ -32,15 +32,24 @@ collection = chroma_client.get_or_create_collection(
 client = OpenAI(api_key=openai_key)
 
 def query_documents(question, n_results=5):
-    citations = []
+    openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+        api_key=openai_key, model_name="text-embedding-3-small"
+    )
+
+    collection = chroma_client.get_or_create_collection(
+        name=collection_name, embedding_function=openai_ef
+    )
+    print(f"🔍 Querying collection: {collection.name}")
+
     results = collection.query(query_texts=question, n_results=n_results)
     relevant_chunks = [doc for sublist in results["documents"] for doc in sublist]
-    
-    for idx,_ in enumerate(results["documents"][0]):
+
+    citations = []
+    for idx, _ in enumerate(results["documents"][0]):
         doc_id = results["ids"][0][idx]
         citations.append(doc_id)
 
-    return relevant_chunks,citations
+    return relevant_chunks, citations
 
 def construct_advanced_prompt(question, context, citations):
     # Format citations into the context
@@ -149,19 +158,4 @@ def retrieve_and_generate(question):
     
     return ai_response, pages, ai_chunks
 
-# Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=True,
-    allow_methods=["*"],  
-    allow_headers=["*"],  
-)
-class QuestionRequest(BaseModel):
-    question: str
-
-@app.post("/ask/rag_response")
-async def ask_question(request: QuestionRequest):
-    response, pages, chunks = retrieve_and_generate(request.question)
-    return {"answer": response, "related_pages": pages, "related_chunks": chunks}
 

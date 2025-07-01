@@ -9,6 +9,7 @@ import fitz  # PyMuPDF
 
 from app.helpers.layout_analysis import get_page_image, draw_polys_on_image
 from app.helpers.db import select_layout_analysis
+from app.helpers.openaiApi import retrieve_and_generate
 
 API_URL = "http://127.0.0.1:8000/ask/rag_response"
 DATABASE = "application.db"
@@ -82,7 +83,7 @@ def render_sources(images):
 
 # --- Main Chat UI Function ---
 def chatbot_interface(in_file):
-    st.title("📘 PDF Chatbot")
+    
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
@@ -118,17 +119,8 @@ def chatbot_interface(in_file):
 
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                try:
-                    res = requests.post(API_URL, json={"question": user_input})
-                    if res.status_code == 200:
-                        data = res.json()
-                        answer = data["answer"]
-                        pages = data["related_pages"]
-                        ai_chunks = data["related_chunks"]
-                    else:
-                        answer, pages, ai_chunks = "❌ Error: API failed to respond.", [], {}
-                except requests.exceptions.RequestException:
-                    answer, pages, ai_chunks = "❌ Cannot connect to backend.", [], {}
+                answer,pages,ai_chunks = retrieve_and_generate(user_input)
+
 
             # Format and stream response
             sources_html = (

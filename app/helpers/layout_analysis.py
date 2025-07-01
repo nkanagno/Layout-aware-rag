@@ -12,15 +12,6 @@ import chromadb
 from openai import OpenAI
 from chromadb.utils import embedding_functions
 
-# Load environment variables
-load_dotenv()
-openai_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_key)
-openai_ef = embedding_functions.OpenAIEmbeddingFunction(api_key=openai_key, model_name="text-embedding-3-small")
-
-# Chroma client
-chroma_client = chromadb.PersistentClient(path="./data/chroma_persistent_storage")
-collection = chroma_client.get_or_create_collection(name="document_qa_collection", embedding_function=openai_ef)
 
 # Load layout predictors (cached)
 @st.cache_resource()
