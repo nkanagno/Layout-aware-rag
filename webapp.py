@@ -10,8 +10,8 @@ st.title("Layout aware Rag")
 pdf_file = st.file_uploader("Upload a complex PDF file:", type=["pdf"])
 if pdf_file is not None :
     tabs = ["Layout analysis", "chatbot"]
-    icons = ["bi-box-arrow-in-right"] + ["person-fill"] + ["person-fill"]
-else:   
+    icons = ["bi-box-arrow-in-right"] + ["person-fill"]
+else:
     st.stop()
 
 selected_tab = option_menu(
