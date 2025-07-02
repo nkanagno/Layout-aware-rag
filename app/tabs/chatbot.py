@@ -75,10 +75,16 @@ def find_polys(page, ai_chunks):
     return texts, [ast.literal_eval(p) for p in polys]
 
 
-def render_sources(images):
+def render_sources(images, page_numbers):
+    images_per_row = 3
     with st.expander("Related Pages"):
-        for img in images:
-            st.image(img)
+        for i in range(0, len(images), images_per_row):
+            remaining = len(images) - i
+            num_cols = min(images_per_row, remaining)
+            cols = st.columns(num_cols)
+            for j in range(num_cols):
+                with cols[j]:
+                    st.image(images[i + j],caption=f"Page {page_numbers[i + j]}")
 
 
 # --- Main Chat UI Function ---
@@ -109,7 +115,7 @@ def chatbot_interface(in_file):
                         final_img = draw_polys_on_image(polygons, highlighted_img, label_font_size=30)
                         images.append(final_img)
                         page_text_map[page] = text_chunks
-                    render_sources(images)
+                    render_sources(images,pages)
 
     # --- Handle New User Input ---
     if user_input := st.chat_input("Ask a question about this PDF..."):
@@ -149,7 +155,7 @@ def chatbot_interface(in_file):
                     final_img = draw_polys_on_image(polygons, highlighted_img, label_font_size=30)
                     images.append(final_img)
                     page_text_map[page] = text_chunks
-                render_sources(images)
+                render_sources(images,pages)
 
             # Store assistant response + metadata
             st.session_state.chat_history.append({
