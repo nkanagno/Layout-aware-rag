@@ -84,8 +84,13 @@ def render_sources(images, page_numbers):
             cols = st.columns(num_cols)
             for j in range(num_cols):
                 with cols[j]:
-                    st.image(images[i + j],caption=f"Page {page_numbers[i + j]}")
-
+                    st.image(images[i + j],use_column_width=True)
+                    st.markdown(
+                        f"""<div style="background-color: yellow; color: black; text-align: center; padding: 5px; border-radius: 5px;margin-bottom:10px;">
+                            Page {page_numbers[i + j]}
+                        </div>""",
+                        unsafe_allow_html=True
+                    )
 
 # --- Main Chat UI Function ---
 def chatbot_interface(in_file):
@@ -126,21 +131,13 @@ def chatbot_interface(in_file):
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 answer,pages,ai_chunks = retrieve_and_generate(user_input)
-
-
-            # Format and stream response
-            sources_html = (
-                "<br><ul><li>" + "</li><li>".join([f"Page {p}" for p in pages]) + "</li></ul>"
-                if pages else ""
-            )
-            full_response = answer + sources_html
             buffer = ""
             display = st.empty()
-            for word in full_response.split():
+            for word in answer.split():
                 buffer += " " + word
                 time.sleep(0.04)
                 display.markdown(buffer + " ▌", unsafe_allow_html=True)
-            display.markdown(full_response, unsafe_allow_html=True)
+            display.markdown(answer, unsafe_allow_html=True)
 
             # Show visual context
             if pages:
@@ -160,7 +157,7 @@ def chatbot_interface(in_file):
             # Store assistant response + metadata
             st.session_state.chat_history.append({
                 "role": "assistant",
-                "message": full_response,
+                "message": answer,
                 "source_pages": pages,
                 "ai_chunks": ai_chunks,
             })

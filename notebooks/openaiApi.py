@@ -14,7 +14,7 @@ openai_ef = embedding_functions.OpenAIEmbeddingFunction(
 )
 
 # chroma client
-chroma_client = chromadb.PersistentClient(path="./data/chroma_persistent_storage")
+chroma_client = chromadb.PersistentClient(path="./chroma_persistent_storage")
 collection_name = "document_qa_collection"
 collection = chroma_client.get_or_create_collection(
     name=collection_name,embedding_function=openai_ef
@@ -41,6 +41,9 @@ def query_documents(question, n_results=5):
         citations.append(doc_id)
 
     return relevant_chunks, citations
+
+
+
 
 def construct_advanced_prompt(question, context, citations):
     # Format citations into the context

@@ -10,6 +10,32 @@ import shutil
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
 
+import sqlite3
+
+def save_chunks_to_sqlite(chunked_documents, db_path="application.db"):
+    # Connect to SQLite DB (creates it if it doesn't exist)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create table (drop first if it exists to avoid duplicates)
+    cursor.execute("DROP TABLE IF EXISTS chunks")
+    cursor.execute("""
+        CREATE TABLE chunks (
+            id TEXT PRIMARY KEY,
+            text TEXT
+        )
+    """)
+    
+    # Insert all chunked documents
+    cursor.executemany(
+        "INSERT INTO chunks (id, text) VALUES (?, ?)",
+        [(doc["id"], doc["text"]) for doc in chunked_documents]
+    )
+    
+    conn.commit()
+    conn.close()
+    print(f"✅ Saved {len(chunked_documents)} chunks to '{db_path}' in table 'chunks'")
+
 def clear_chroma_folders(chroma_dir="data/chroma_persistent_storage"):
     chroma_dir = os.path.join("data", "chroma_persistent_storage")
     for item in os.listdir(chroma_dir):
@@ -34,6 +60,7 @@ def split_text(text, chunk_size=1000, chunk_overlap=20):
         end = start + chunk_size
         chunks.append(text[start:end])
         start = end - chunk_overlap
+    
     return chunks
 
 # This function now receives the OpenAI client
@@ -55,6 +82,8 @@ def spilt_docs():
         chunks = split_text(doc['text'])
         for i, chunk in enumerate(chunks):
             chunked_documents.append({"id": f"{doc['id']}_chunk{i+1}", "text": chunk})
+            
+    save_chunks_to_sqlite(chunked_documents)
     return chunked_documents
 
 def generate_embeddings():
