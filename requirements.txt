@@ -47,4 +47,4 @@ uvicorn
 xlrd
 streamlit
 streamlit_option_menu
-pysqlite3-binary
+PyPDF2
