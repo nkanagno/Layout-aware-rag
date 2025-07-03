@@ -23,22 +23,6 @@ def merge_pdfs(files):
 if not pdf_files:
     st.info("Please upload at least one PDF file to continue.")
     st.stop()
-import base64
-
-def show_pdf(pdf_file):
-    # Convert PDF file (BytesIO or UploadedFile) to base64
-    base64_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
-    
-    # Embedding PDF in HTML
-    pdf_display = f'''
-        <iframe 
-            src="data:application/pdf;base64,{base64_pdf}" 
-            width="100%" 
-            height="600" 
-            type="application/pdf">
-        </iframe>
-    '''
-    st.components.v1.html(pdf_display, height=620, scrolling=True)
 
 # Merge PDFs into a single file
 merged_pdf = merge_pdfs(pdf_files)
@@ -54,8 +38,6 @@ selected_tab = option_menu(
     icons=icons,
     orientation="horizontal",
 )
-st.subheader("📄 Merged PDF Preview")
-show_pdf(merged_pdf)
 
 # Important: seek to beginning again for reuse
 merged_pdf.seek(0)
